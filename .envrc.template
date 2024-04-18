@@ -1,3 +1,0 @@
-. .venv/bin/activate
-
-export GITHUB_API_TOKEN=<token>
