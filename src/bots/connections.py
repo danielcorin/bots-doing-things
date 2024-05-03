@@ -182,7 +182,7 @@ class Game:
         guess_model_response: str = self.guesser.send_prompt(self.prompt)
         logger.info(guess_model_response)
         parsed_guess = self.evaluator.parse_guess(guess_model_response)
-        print(parsed_guess)
+        logger.info(parsed_guess)
         if not parsed_guess.valid:
             self.prompt = f"Your guess was invalid. {parsed_guess.reason}."
             return
@@ -255,7 +255,7 @@ def fetch_game_data(game_date):
 @stub.function(image=connections_image, secrets=[modal.Secret.from_name("bots-doing-things")])
 def play_game(model: str):
     game_date =  date.today().strftime("%Y-%m-%d")
-    print(game_date)
+    logger.info(game_date)
     game_data = fetch_game_data(game_date)
     categories = [
         Category(
@@ -264,7 +264,7 @@ def play_game(model: str):
         )
         for c in game_data["categories"]
     ]
-    print(categories)
+    logger.info(categories)
 
     guesser = LLMGuesser(model)
     game = Game(categories, guesser)

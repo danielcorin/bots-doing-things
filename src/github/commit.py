@@ -4,7 +4,6 @@ import modal
 
 stub = modal.Stub("github.commit")
 pygithub_image = modal.Image.debian_slim().pip_install("PyGithub>=1.59")
-git_image = modal.Image.debian_slim().apt_install("git").pip_install("GitPython")
 
 
 with pygithub_image.imports():
