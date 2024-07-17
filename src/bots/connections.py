@@ -1,4 +1,3 @@
-
 import logging
 import modal
 import random
@@ -14,14 +13,11 @@ from modal import Image, Stub
 from typing import Dict, List, Set
 
 
-connections_image = (
-    Image.debian_slim(python_version="3.11")
-    .pip_install(
-        "pydantic==2.7.1",
-        "llm==0.13.1",
-        "llm-claude-3==0.3",
-        "httpx==0.27.0",
-    )
+connections_image = Image.debian_slim(python_version="3.11").pip_install(
+    "pydantic==2.7.1",
+    "llm==0.14",
+    "llm-claude-3==0.4",
+    "httpx==0.27.0",
 )
 
 stub = Stub(name="bots.connections")
@@ -57,6 +53,34 @@ Sometimes the categories are "outside the box". Here are some examples in the fo
 - Second ___: FIDDLE, GUESS, NATURE, WIND
 - Associated with "stub": CIGARETTE, PENCIL, TICKET, TOE
 - ___ Dream: AMERICAN, FEVER, LUCID, PIPE
+
+Here is a example solution to a full puzzle for further context
+
+Words:
+
+SPRINKLE
+SPONGE
+BIRD
+ROSE
+PICK
+CHERRY
+DROP
+CREAM
+MUD
+BUBBLE
+TOP
+SPOT
+RUBY
+BEST
+SPLASH
+BRICK
+
+Solution:
+
+- A little bit of a beverage: DROP, SPLASH, SPOT, SPRINKLE
+- Shades of red: BRICK, CHERRY, ROSE, RUBY
+- ___  Bath: BIRD, BUBBLE, MUD, SPONGE
+- Choicest: BEST, CREAM, PICK, TOP
 
 Here are the 16 words:
 {words}
@@ -141,7 +165,10 @@ class GuessEvaluator:
 
     def parse_guess(self, guess: str) -> ParsedGuess:
         guess_tokens = guess.replace("\n", " ").split(" ")
-        guess_tokens = [''.join(c for c in token if c not in string.punctuation) for token in guess_tokens]
+        guess_tokens = [
+            "".join(c for c in token if c not in string.punctuation)
+            for token in guess_tokens
+        ]
         logger.info(f"Guess tokens: {guess_tokens}")
         guess_set: Set[str] = set()
         for word in self.words:
@@ -152,7 +179,10 @@ class GuessEvaluator:
             return ParsedGuess(False, guess_set, "Your guess must contain 4 words")
 
         return ParsedGuess(True, guess_set, "")
-    def evaluate_guess(self, guess_set: Set[str], guessed_sets: List[Set[str]]) -> Guess:
+
+    def evaluate_guess(
+        self, guess_set: Set[str], guessed_sets: List[Set[str]]
+    ) -> Guess:
         if guess_set in guessed_sets:
             return Guess(words=guess_set, result=GuessResult.INVALID)
 
@@ -172,7 +202,10 @@ class Game:
         self.prompt = START_MESSAGE.format(words="\n".join(self.state.words))
 
     def play(self):
-        while self.state.remaining_mistakes > 0 and self.state.num_correct_guesses != NUM_CATEGORIES:
+        while (
+            self.state.remaining_mistakes > 0
+            and self.state.num_correct_guesses != NUM_CATEGORIES
+        ):
             self.do_turn()
         logger.info(self.prompt)
         return self.state.num_correct_guesses == NUM_CATEGORIES
@@ -191,13 +224,17 @@ class Game:
             self.prompt = "Your guess was invalid. You cannot use a word in more than one category."
             return
 
-        guess_result: Guess = self.evaluator.evaluate_guess(parsed_guess.guess_set, self.state.guessed_sets())
+        guess_result: Guess = self.evaluator.evaluate_guess(
+            parsed_guess.guess_set, self.state.guessed_sets()
+        )
         self.state.add_guess(guess_result)
         match guess_result.result:
             case GuessResult.CORRECT:
                 self.prompt = f"Correct! You've guessed {self.state.num_correct_guesses}/4 groups."
             case GuessResult.THREE_OUT_OF_FOUR:
-                self.prompt = "Incorrect, but three out of four words belong to the same category"
+                self.prompt = (
+                    "Incorrect, but three out of four words belong to the same category"
+                )
             case GuessResult.INCORRECT:
                 self.prompt = "Incorrect"
             case GuessResult.INVALID:
@@ -206,7 +243,9 @@ class Game:
         self.prompt += f" You have {self.state.remaining_mistakes} guess{'es' if self.state.remaining_mistakes > 1 else ''} remaining."
         if self.state.correct_guesses():
             self.prompt += "\nCorrect guesses so far: "
-            self.prompt += ' '.join([str(g.words) for g in self.state.correct_guesses()])
+            self.prompt += " ".join(
+                [str(g.words) for g in self.state.correct_guesses()]
+            )
 
     def result(self):
         logger.info(f"Total guesses: {len(self.state.guesses)}")
@@ -225,7 +264,10 @@ def puzzle_number(end):
     current_game_date = datetime.strptime(end, "%Y-%m-%d")
     return (current_game_date - first_game_date).days + 1
 
-def format_game_result(model: str, game_date: str, categories: List[Category], guesses: List[Guess]):
+
+def format_game_result(
+    model: str, game_date: str, categories: List[Category], guesses: List[Guess]
+):
     emoji_to_category_dict: Dict[frozenset[str], str] = {
         frozenset(categories[0].words): "🟩",
         frozenset(categories[1].words): "🟨",
@@ -244,6 +286,7 @@ def format_game_result(model: str, game_date: str, categories: List[Category], g
         out_str += guess_str
     return out_str.strip()
 
+
 def fetch_game_data(game_date):
     url = f"https://www.nytimes.com/svc/connections/v2/{game_date}.json"
     with httpx.Client() as client:
@@ -252,9 +295,11 @@ def fetch_game_data(game_date):
         return response.json()
 
 
-@stub.function(image=connections_image, secrets=[modal.Secret.from_name("bots-doing-things")])
+@stub.function(
+    image=connections_image, secrets=[modal.Secret.from_name("bots-doing-things")]
+)
 def play_game(model: str):
-    game_date =  date.today().strftime("%Y-%m-%d")
+    game_date = date.today().strftime("%Y-%m-%d")
     logger.info(game_date)
     game_data = fetch_game_data(game_date)
     categories = [
@@ -278,4 +323,3 @@ def play_game(model: str):
     )
     logger.info(result)
     return result
-

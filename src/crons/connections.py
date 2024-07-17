@@ -23,15 +23,28 @@ tags = {tags}
 
 REPO = "danielcorin/bots-doing-things"
 
+
 # runs at 7 am (ET) every day
 @stub.function(schedule=Cron("0 11 * * *"), timeout=40)
 def play_connections_gpt_4_turbo():
     play_connections("gpt-4-turbo")
 
+
 # runs at 7 am (ET) every day
 @stub.function(schedule=Cron("0 11 * * *"), timeout=60)
 def play_connections_claude_3_opus():
     play_connections("claude-3-opus")
+
+
+# runs at 7 am (ET) every day
+@stub.function(schedule=Cron("0 11 * * *"), timeout=40)
+def play_connections_gpt_4o():
+    play_connections("gpt-4o")
+
+
+@stub.function(schedule=Cron("0 11 * * *"), timeout=60)
+def play_connections_claude_3_5_sonnet():
+    play_connections("claude-3.5-sonnet")
 
 
 def play_connections(model):
@@ -45,6 +58,9 @@ def play_connections(model):
         path,
         commit,
         FILE_TEMPLATE.format(
-            date=date, content=content, model=model, tags=json.dumps(tags),
+            date=date,
+            content=content,
+            model=model,
+            tags=json.dumps(tags),
         ),
     )
