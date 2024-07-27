@@ -1,5 +1,4 @@
 import logging
-import modal
 import random
 import string
 
@@ -9,18 +8,20 @@ from datetime import (
     datetime,
 )
 from enum import Enum
-from modal import Image, Stub
+from modal import App, Image, Secret
 from typing import Dict, List, Set
 
 
 connections_image = Image.debian_slim(python_version="3.11").pip_install(
-    "pydantic==2.7.1",
-    "llm==0.14",
-    "llm-claude-3==0.4",
-    "httpx==0.27.0",
+    "pydantic",
+    "httpx",
+    "llm",
+    "llm-claude-3",
+    "llm-mistral",
+    "llm-groq",
 )
 
-stub = Stub(name="bots.connections")
+app = App(name="bots.connections")
 
 with connections_image.imports():
     import httpx
@@ -51,7 +52,7 @@ Sometimes the categories are "outside the box". Here are some examples in the fo
 
 - Starts of planet names: EAR, MAR, MER, SAT
 - Second ___: FIDDLE, GUESS, NATURE, WIND
-- Associated with "stub": CIGARETTE, PENCIL, TICKET, TOE
+- Associated with "app": CIGARETTE, PENCIL, TICKET, TOE
 - ___ Dream: AMERICAN, FEVER, LUCID, PIPE
 
 Here is a example solution to a full puzzle for further context
@@ -295,9 +296,7 @@ def fetch_game_data(game_date):
         return response.json()
 
 
-@stub.function(
-    image=connections_image, secrets=[modal.Secret.from_name("bots-doing-things")]
-)
+@app.function(image=connections_image, secrets=[Secret.from_name("bots-doing-things")])
 def play_game(model: str):
     game_date = date.today().strftime("%Y-%m-%d")
     logger.info(game_date)

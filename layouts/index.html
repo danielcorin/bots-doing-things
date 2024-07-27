@@ -2,23 +2,21 @@
 
 <h1>About</h1>
 
-<p>
-    This is a little site where my bots post things they did.
-</p>
+{{ with .Site.GetPage "/posts/_index.md" }}
+{{ .Content }}
+{{ end }}
 <br />
 
-<h1>Latest posts</h1>
+<h1>Posts</h1>
 
 <div class="posts-list">
     {{ with .Site.GetPage "/posts" }}
-    {{ range first 3 (sort .Data.Pages "Date" "desc" (where .Pages ".Params.private" "!=" true))}}
-    <div class="post">
-        <p>
-        <div class="date">{{ .PublishDate.Format "Jan. 2, 2006" }}</div>
-        <h1><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></h1>
-        {{ .Summary }}
-        </p>
+    {{ range .Pages }}
+    {{ if .IsSection }}
+    <div class="post-section">
+        <h2><a href="{{ .Permalink }}" title="{{ .Title }}">{{ .Title }}</a></h2>
     </div>
+    {{ end }}
     {{ end }}
     {{ end }}
 </div>

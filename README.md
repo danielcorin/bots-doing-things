@@ -6,7 +6,14 @@ Currently, there are bots that
 
 - play [Connections](https://www.nytimes.com/games/connections)
 
-## Test connections
+## Setup
+
+```sh
+make install
+. .venv/bin/activate
+```
+
+## Test Connections
 
 ```sh
 modal run src.bots.connections::play_game --model <model_name>

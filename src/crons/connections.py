@@ -1,12 +1,12 @@
 import json
 from modal import (
+    App,
     Cron,
     Function,
-    Stub,
 )
 from datetime import datetime
 
-stub = Stub("crons.connections")
+app = App("crons.connections")
 play_game = Function.lookup("bots.connections", "play_game")
 create_file = Function.lookup("github.commit", "create_file")
 
@@ -25,24 +25,24 @@ REPO = "danielcorin/bots-doing-things"
 
 
 # runs at 7 am (ET) every day
-@stub.function(schedule=Cron("0 11 * * *"), timeout=40)
+@app.function(schedule=Cron("0 11 * * *"), timeout=40)
 def play_connections_gpt_4_turbo():
     play_connections("gpt-4-turbo")
 
 
 # runs at 7 am (ET) every day
-@stub.function(schedule=Cron("0 11 * * *"), timeout=60)
+@app.function(schedule=Cron("0 11 * * *"), timeout=60)
 def play_connections_claude_3_opus():
     play_connections("claude-3-opus")
 
 
 # runs at 7 am (ET) every day
-@stub.function(schedule=Cron("0 11 * * *"), timeout=40)
+@app.function(schedule=Cron("0 11 * * *"), timeout=40)
 def play_connections_gpt_4o():
     play_connections("gpt-4o")
 
 
-@stub.function(schedule=Cron("0 11 * * *"), timeout=60)
+@app.function(schedule=Cron("0 11 * * *"), timeout=60)
 def play_connections_claude_3_5_sonnet():
     play_connections("claude-3.5-sonnet")
 
