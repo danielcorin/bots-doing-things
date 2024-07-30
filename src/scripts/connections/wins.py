@@ -57,12 +57,17 @@ def count_connections_wins():
     return stats
 
 
+def build_stats_table(model_stats):
+    table = "| Model | Wins | Games | Win % | First Game  |\n"
+    table += "|-------|------|-------------|----------------|------------|\n"
+    for model, stat in model_stats.items():
+        table += (
+            f"| {model} | {stat.wins} | {stat.games} | {stat.win_percentage:.1f}% | "
+            f"{stat.first_game_date.strftime('%Y-%m-%d')} |\n"
+        )
+    return table.strip()
+
+
 if __name__ == "__main__":
     model_stats = count_connections_wins()
-    print("| Model | Wins | Games | Win % | First Game  |")
-    print("|-------|------|-------------|----------------|------------|")
-    for model, stat in model_stats.items():
-        print(
-            f"| {model} | {stat.wins} | {stat.games} | {stat.win_percentage:.1f}% | "
-            f"{stat.first_game_date.strftime('%Y-%m-%d')} |"
-        )
+    print(build_stats_table(model_stats))
