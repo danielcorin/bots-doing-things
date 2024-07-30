@@ -13,7 +13,7 @@ from typing import Dict, List, Set
 
 
 connections_image = Image.debian_slim(python_version="3.11").pip_install(
-    "pydantic",
+    "pydantic>=2.0",
     "httpx",
     "llm",
     "llm-claude-3",
