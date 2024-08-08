@@ -1,6 +1,7 @@
+import json
 import logging
 import random
-import string
+import re
 
 from dataclasses import dataclass
 from datetime import (
@@ -40,7 +41,7 @@ NUM_CATEGORIES = 4
 # Set a fixed seed for the random number generator for reproducibility
 random.seed(42)
 
-START_MESSAGE = """"Connections" is a word categorization game. I will provide you with 16 words, and your goal is to find four groups of four words that share a common category. Each word will belong to only one category in the correct solution. You have a maximum of four incorrect guesses, so choose carefully!
+START_MESSAGE = """"Connections" is a word categorization game. I will provide you with 16 words, and your goal is to find four groups of four words that share a common category. Each word will belong to only one category in the correct solution. Be careful of words that seem like they could fit in more than one category. Consider guessing other categories first to improve your chances of success by elimination of other more obvious words. You have a maximum of four incorrect guesses, so choose carefully!
 
 After I give you the words, you will suggest one group of four words at a time and the category that connects them. I will provide feedback on whether the group of four words is correct or incorrect. The accuracy of the category name is not important; what matters is that the four words belong together. If three out of the four words you guess share a category, I will let you know. Otherwise, I will simply tell you if your guess was right or wrong.
 
@@ -52,7 +53,7 @@ Sometimes the categories are "outside the box". Here are some examples in the fo
 
 - Starts of planet names: EAR, MAR, MER, SAT
 - Second ___: FIDDLE, GUESS, NATURE, WIND
-- Associated with "app": CIGARETTE, PENCIL, TICKET, TOE
+- Associated with "stub": CIGARETTE, PENCIL, TICKET, TOE
 - ___ Dream: AMERICAN, FEVER, LUCID, PIPE
 
 Here is a example solution to a full puzzle for further context
@@ -86,7 +87,21 @@ Solution:
 Here are the 16 words:
 {words}
 
-Please make your first guess. Guess words should be all caps. Good luck!
+Do any thinking you need to do inside <scratchpad></scratchpad> tags.
+Please make your first guess.
+Output guesses in the following format inside the backticks:
+
+```
+{{"<category>": ["<word_1>", "<word_2>", "<word_3>", "<word_4>"]}}
+```
+
+For example:
+
+```
+{{"Types of fish": ["SALMON", "TROUT", "BASS", "STURGEON"]}}
+```
+
+Good luck!
 """
 
 
@@ -117,7 +132,7 @@ class LLMGuesser(object):
         self.model = llm.get_model(model)
         self.conversation = self.model.conversation()
 
-    def send_prompt(self, prompt) -> str:
+    def make_guess(self, prompt) -> str:
         response = self.conversation.prompt(prompt)
         return response.text()
 
@@ -143,7 +158,7 @@ class GameState:
         self.guesses.append(guess)
         if guess.result == GuessResult.CORRECT:
             self.num_correct_guesses += 1
-        else:
+        elif guess.result != GuessResult.INVALID:
             self.remaining_mistakes -= 1
 
     def guessed_sets(self) -> List[Set[str]]:
@@ -165,11 +180,18 @@ class GuessEvaluator:
         self.words = words
 
     def parse_guess(self, guess: str) -> ParsedGuess:
-        guess_tokens = guess.replace("\n", " ").split(" ")
-        guess_tokens = [
-            "".join(c for c in token if c not in string.punctuation)
-            for token in guess_tokens
-        ]
+        # remove scratchpad
+        guess = re.sub(r"<scratchpad>.*?</scratchpad>", "", guess, flags=re.DOTALL)
+        # extract json guess from inside backticks
+        guess_re = re.search(r"```(.*?)```", guess, re.DOTALL)
+        if guess_re:
+            guess_re = guess_re.group(1).strip()
+            guess_dict = json.loads(guess_re)
+        else:
+            guess_dict = json.loads(guess)
+
+        guess_tokens = list(guess_dict.values())[0]
+
         logger.info(f"Guess tokens: {guess_tokens}")
         guess_set: Set[str] = set()
         for word in self.words:
@@ -213,10 +235,9 @@ class Game:
 
     def do_turn(self):
         logger.info(self.prompt)
-        guess_model_response: str = self.guesser.send_prompt(self.prompt)
+        guess_model_response: str = self.guesser.make_guess(self.prompt)
         logger.info(guess_model_response)
         parsed_guess = self.evaluator.parse_guess(guess_model_response)
-        logger.info(parsed_guess)
         if not parsed_guess.valid:
             self.prompt = f"Your guess was invalid. {parsed_guess.reason}."
             return
@@ -228,7 +249,9 @@ class Game:
         guess_result: Guess = self.evaluator.evaluate_guess(
             parsed_guess.guess_set, self.state.guessed_sets()
         )
-        self.state.add_guess(guess_result)
+
+        if guess_result.result != GuessResult.INVALID:
+            self.state.add_guess(guess_result)
         match guess_result.result:
             case GuessResult.CORRECT:
                 self.prompt = f"Correct! You've guessed {self.state.num_correct_guesses}/4 groups."
@@ -257,6 +280,7 @@ class Game:
             logger.info("✅ LLM won")
         else:
             logger.info("❌ LLM lost")
+        return self.state
 
 
 def puzzle_number(end):
