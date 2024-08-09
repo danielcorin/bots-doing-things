@@ -13,7 +13,7 @@ from modal import App, Image, Secret
 from typing import Dict, List, Set
 
 
-connections_image = Image.debian_slim(python_version="3.11").pip_install(
+connections_image = Image.debian_slim(python_version="3.12").pip_install(
     "pydantic>=2.0",
     "httpx",
     "llm",

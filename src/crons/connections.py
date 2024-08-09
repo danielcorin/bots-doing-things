@@ -54,6 +54,7 @@ async def play_all_connections():
         "gpt-4-turbo",
         "claude-3.5-sonnet",
         "claude-3-opus",
+        "mistral-large",
     ]
     files = {}
 
