@@ -7,10 +7,9 @@ tags = ["connections", "mistral-large"]
 ```text
 🤖 Connections (mistral-large) 
 Puzzle #441
-🟪🟩🟦🟩
+🟩🟩🟦🟩
 🟨🟨🟨🟨
 🟦🟦🟩🟦
-🟦🟦🟦🟦
-🟪🟩🟩🟩
-🟪🟩🟪🟩
+🟦🟪🟪🟪
+🟩🟦🟩🟩
 ```
